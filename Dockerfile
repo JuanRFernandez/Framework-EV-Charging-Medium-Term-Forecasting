@@ -10,16 +10,30 @@ ADD . /app
 # Create the environment:
 COPY environment.yml .
 
-# Update conda and install mamba
+# Update conda and install mamba and prerequisites for Osmium
 RUN conda update -n base -c defaults conda && \
-    conda install mamba -c conda-forge
-
+    conda install mamba -c conda-forge && \
+    apt-get update && \
+    apt-get install -y build-essential cmake libboost-program-options-dev \
+                       libbz2-dev zlib1g-dev libexpat1-dev pandoc
 
 # Create the environment:
 RUN mamba env create -f environment.yml
 
 # Make sure the environment is activated:
 SHELL ["conda", "run", "-n", "ev_charging_env", "/bin/bash", "-c"]
+
+# Clone osmium dependencies
+RUN git clone https://github.com/mapbox/protozero.git && \
+    git clone https://github.com/osmcode/libosmium.git
+
+# Clone and build osmium
+RUN git clone https://github.com/osmcode/osmium-tool.git && \
+    cd osmium-tool && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make
 
 # ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "ev_charging_env", "python", "your_script.py"] ## I dont have a main Python script, the Python script would be application-specific.
 
